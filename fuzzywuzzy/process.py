@@ -71,7 +71,49 @@ def extract(query, choices, processor=None, scorer=None, limit=5):
 
     sl.sort(key=lambda i: i[1], reverse=True)
     return sl[:limit]
+    
+def extractWithIndex(query, choices, processor=None, scorer=None, limit=5):
+    """Find best matches in a list of choices, return a list of tuples
+       containing the match, it's score and also its index in the choices
 
+    Arguments:
+        query       -- an object representing the thing we want to find
+        choices     -- a list of objects we are attempting to extract
+                       values from
+        scorer      -- f(OBJ, QUERY) --> INT. We will return the objects
+                       with the highest score by default, we use
+                       score.WRatio() and both OBJ and QUERY should be
+                       strings
+        processor   -- f(OBJ_A) --> OBJ_B, where the output is an input
+                       to scorer for example, "processor = lambda x:
+                       x[0]" would return the first element in a
+                       collection x (of, say, strings) this would then
+                       be used in the scoring collection by default, we
+                       use utils.full_process()
+
+    """
+    if choices is None or len(choices) == 0:
+        return []
+
+    # default, turn whatever the choice is into a workable string
+    if processor is None:
+        processor = lambda x: utils.full_process(x)
+
+    # default: wratio
+    if scorer is None:
+        scorer = fuzz.WRatio
+
+    sl = list()
+    index = -1
+    for choice in choices:
+        index +=1
+        processed = processor(choice)
+        score = scorer(query, processed, index)
+        tuple = (choice, score)
+        sl.append(tuple)
+
+    sl.sort(key=lambda i: i[1], reverse=True)
+    return sl[:limit]
 
 def extractBests(query, choices, processor=None, scorer=None, score_cutoff=0, limit=5):
     """Find best matches above a score in a list of choices, return a
